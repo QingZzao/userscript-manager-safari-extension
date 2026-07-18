@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>UserScript Manager Safari 宣传页</title>
+  <style>
+    /*
+      Assumptions:
+      - 这是面向 GitHub / 自用分享场景的宣传页，不是生产官网。
+      - 目标读者是 macOS Safari 用户、脚本玩家和愿意自己打包扩展的人。
+      - 视觉重点放在 Safari、轻量管理器、可检查的本机控制感。
+      - 图像资产使用项目自带 icon；其余界面用 CSS 高保真 mockup 表达。
+    */
+
+    :root {
+      color-scheme: dark;
+      --bg: #101113;
+      --panel: #181b20;
+      --panel-2: #20242b;
+      --line: #343a43;
+      --line-soft: #272c33;
+      --text: #f5f7fb;
+      --muted: #aab1bd;
+      --soft: #d7dce5;
+      --blue: #2f7df6;
+      --green: #37c36b;
+      --red: #e8453c;
+      --yellow: #f1b93a;
+      --cyan: #5cc9dd;
+      --shadow: 0 30px 100px rgba(0, 0, 0, .45);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+      background: var(--bg);
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 14% 8%, rgba(47, 125, 246, .20), transparent 28%),
+        linear-gradient(180deg, #111317 0%, #0f1114 42%, #17191c 100%);
+      letter-spacing: 0;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .page {
+      width: min(1440px, 100%);
+      margin: 0 auto;
+      padding: 28px 36px 48px;
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      min-height: 48px;
+      border-bottom: 1px solid rgba(255, 255, 255, .08);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 740;
+      font-size: 15px;
+    }
+
+    .brand img {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      box-shadow: 0 8px 24px rgba(47, 125, 246, .35);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(360px, 520px) minmax(560px, 1fr);
+      gap: 48px;
+      align-items: center;
+      padding: 80px 0 72px;
+    }
+
+    .eyebrow {
+      width: fit-content;
+      margin-bottom: 22px;
+      padding: 7px 10px;
+      border: 1px solid rgba(92, 201, 221, .35);
+      border-radius: 999px;
+      color: #bdf5ff;
+      background: rgba(92, 201, 221, .08);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    h1 {
+      margin: 0;
+      max-width: 11ch;
+      font-size: clamp(54px, 6vw, 96px);
+      line-height: .94;
+      letter-spacing: 0;
+      text-wrap: balance;
+    }
+
+    .lead {
+      margin: 28px 0 0;
+      max-width: 560px;
+      color: #ccd3dd;
+      font-size: 20px;
+      line-height: 1.7;
+      text-wrap: pretty;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 34px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 0 18px;
+      border-radius: var(--radius);
+      font-size: 15px;
+      font-weight: 760;
+      border: 1px solid transparent;
+    }
+
+    .btn.primary {
+      background: var(--blue);
+      color: white;
+      box-shadow: 0 16px 42px rgba(47, 125, 246, .34);
+    }
+
+    .btn.secondary {
+      border-color: rgba(255, 255, 255, .16);
+      color: var(--soft);
+      background: rgba(255, 255, 255, .05);
+    }
+
+    .proof {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 34px;
+      max-width: 560px;
+    }
+
+    .proof-item {
+      padding: 12px 14px;
+      border: 1px solid rgba(255, 255, 255, .09);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, .04);
+    }
+
+    .proof-item strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 17px;
+    }
+
+    .proof-item span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .mock {
+      border: 1px solid rgba(255, 255, 255, .12);
+      border-radius: 18px;
+      overflow: hidden;
+      background: #14171b;
+      box-shadow: var(--shadow);
+    }
+
+    .traffic {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      height: 42px;
+      padding: 0 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, .08);
+      background: #202329;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .dot.red { background: var(--red); }
+    .dot.yellow { background: var(--yellow); }
+    .dot.green { background: var(--green); }
+
+    .address {
+      margin-left: auto;
+      margin-right: auto;
+      width: 48%;
+      min-width: 280px;
+      height: 24px;
+      border-radius: 999px;
+      background: #2a2f37;
+      color: #b8bec8;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .manager {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      min-height: 560px;
+    }
+
+    .script-list {
+      padding: 18px;
+      border-right: 1px solid rgba(255, 255, 255, .08);
+      background: #191d23;
+    }
+
+    .side-title {
+      margin: 0 0 16px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .script-card {
+      padding: 14px;
+      border: 1px solid rgba(255, 255, 255, .10);
+      border-radius: var(--radius);
+      background: #232832;
+      margin-bottom: 12px;
+    }
+
+    .script-card.active {
+      border-color: rgba(47, 125, 246, .65);
+      background: #253044;
+    }
+
+    .script-card h3 {
+      margin: 0 0 8px;
+      font-size: 15px;
+      line-height: 1.35;
+    }
+
+    .script-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .detail {
+      padding: 24px 26px 26px;
+      background: #15181d;
+    }
+
+    .detail-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 22px;
+    }
+
+    .detail h2 {
+      margin: 0 0 7px;
+      font-size: 26px;
+      line-height: 1.15;
+    }
+
+    .detail-meta {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .switch {
+      min-width: 88px;
+      height: 34px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      color: white;
+      background: var(--green);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, .10);
+      margin-bottom: 18px;
+    }
+
+    .tab {
+      padding: 10px 12px 12px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 760;
+    }
+
+    .tab.active {
+      color: white;
+      border-bottom: 2px solid var(--blue);
+    }
+
+    .code {
+      display: grid;
+      grid-template-columns: 46px 1fr;
+      border: 1px solid rgba(255, 255, 255, .10);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: #0f1217;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.8;
+    }
+
+    .lines {
+      padding: 12px 10px;
+      color: #68707d;
+      text-align: right;
+      background: #12161d;
+      user-select: none;
+    }
+
+    .source {
+      padding: 12px 16px;
+      color: #d4d9e3;
+      white-space: pre;
+      overflow: hidden;
+    }
+
+    .token-blue { color: #78a8ff; }
+    .token-green { color: #8ce39f; }
+    .token-cyan { color: #8be7ff; }
+    .token-gray { color: #7f8793; }
+
+    .bands {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, .09);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, .09);
+    }
+
+    .band {
+      padding: 30px;
+      min-height: 230px;
+      background: #171a1f;
+    }
+
+    .band h2 {
+      margin: 0 0 14px;
+      font-size: 24px;
+    }
+
+    .band p {
+      margin: 0;
+      color: #b8c0cc;
+      font-size: 16px;
+      line-height: 1.72;
+      text-wrap: pretty;
+    }
+
+    .install {
+      margin-top: 1px;
+      padding: 42px;
+      border: 1px solid rgba(255, 255, 255, .09);
+      border-radius: var(--radius);
+      background: #f3f5f8;
+      color: #17191d;
+    }
+
+    .install h2 {
+      margin: 0 0 22px;
+      font-size: 34px;
+    }
+
+    .terminal {
+      padding: 18px;
+      border-radius: var(--radius);
+      background: #111317;
+      color: #d9e0ea;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 14px;
+      line-height: 1.9;
+      overflow: auto;
+    }
+
+    .terminal .prompt {
+      color: #77da8b;
+    }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      padding-top: 34px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 1050px) {
+      .hero {
+        grid-template-columns: 1fr;
+        padding-top: 54px;
+      }
+
+      h1 {
+        max-width: 12ch;
+      }
+
+      .manager {
+        grid-template-columns: 1fr;
+      }
+
+      .script-list {
+        border-right: 0;
+        border-bottom: 1px solid rgba(255, 255, 255, .08);
+      }
+    }
+
+    @media (max-width: 760px) {
+      .page {
+        padding: 20px 16px 34px;
+      }
+
+      .nav {
+        align-items: flex-start;
+        flex-direction: column;
+        padding-bottom: 16px;
+      }
+
+      .nav-links {
+        flex-wrap: wrap;
+      }
+
+      .hero {
+        gap: 28px;
+        padding: 42px 0 46px;
+      }
+
+      h1 {
+        font-size: 50px;
+      }
+
+      .lead {
+        font-size: 17px;
+      }
+
+      .proof,
+      .bands {
+        grid-template-columns: 1fr;
+      }
+
+      .detail {
+        padding: 18px;
+      }
+
+      .detail-head {
+        flex-direction: column;
+      }
+
+      .install {
+        padding: 28px 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <nav class="nav" aria-label="页面导航">
+      <a class="brand" href="../README.md">
+        <img src="../extension/icons/icon-128.png" alt="">
+        <span>UserScript Manager Safari</span>
+      </a>
+      <div class="nav-links">
+        <a href="#features">能力</a>
+        <a href="#install">安装</a>
+        <a href="../LICENSE">MIT License</a>
+      </div>
+    </nav>
+
+    <section class="hero">
+      <div>
+        <div class="eyebrow">macOS Safari · Lightweight Userscript Manager</div>
+        <h1>把用户脚本带回 Safari。</h1>
+        <p class="lead">
+          一个本机自用的轻量用户脚本管理器。安装 `.user.js`，管理启停，查看源码、存储和错误日志，让 Zhihu、AC-baidu、GitHub Enhancement 这类脚本继续在 Safari 里可控地运行。
+        </p>
+        <div class="actions">
+          <a class="btn primary" href="../README.md">查看打包安装说明</a>
+          <a class="btn secondary" href="https://github.com/QingZzao/userscript-manager-safari-extension">打开 GitHub 仓库</a>
+        </div>
+        <div class="proof" aria-label="项目状态">
+          <div class="proof-item">
+            <strong>MV3</strong>
+            <span>Safari Web Extension</span>
+          </div>
+          <div class="proof-item">
+            <strong>GM API</strong>
+            <span>常用能力兼容</span>
+          </div>
+          <div class="proof-item">
+            <strong>MIT</strong>
+            <span>自由 fork 和修改</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="mock" aria-label="管理器界面预览">
+        <div class="traffic">
+          <span class="dot red"></span>
+          <span class="dot yellow"></span>
+          <span class="dot green"></span>
+          <div class="address">userscript-manager.local/options</div>
+        </div>
+        <div class="manager">
+          <aside class="script-list">
+            <p class="side-title">已安装脚本</p>
+            <article class="script-card active">
+              <h3>AC-baidu 搜索优化</h3>
+              <p>已启用 · @include 16 条 · @resource 已缓存</p>
+            </article>
+            <article class="script-card">
+              <h3>Zhihu enhancement</h3>
+              <p>已启用 · 菜单命令 · GM 存储</p>
+            </article>
+            <article class="script-card">
+              <h3>GitHub Enhancement</h3>
+              <p>待测试 · 高速下载 · 剪贴板支持</p>
+            </article>
+          </aside>
+          <section class="detail">
+            <div class="detail-head">
+              <div>
+                <h2>源码与运行状态同屏查看</h2>
+                <div class="detail-meta">版本 0.1.4 · document-end · 主环境注入</div>
+              </div>
+              <div class="switch">已启用</div>
+            </div>
+            <div class="tabs">
+              <div class="tab">概览</div>
+              <div class="tab">匹配规则</div>
+              <div class="tab">权限/API</div>
+              <div class="tab">存储</div>
+              <div class="tab active">源码</div>
+            </div>
+            <div class="code" aria-label="源码预览">
+              <div class="lines">1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9</div>
+              <div class="source"><span class="token-gray">// ==UserScript==</span>
+<span class="token-blue">// @name</span> GitHub Enhancement
+<span class="token-blue">// @match</span> *://github.com/*
+<span class="token-blue">// @grant</span> GM_setClipboard
+<span class="token-gray">// ==/UserScript==</span>
+
+<span class="token-cyan">GM_registerMenuCommand</span>(<span class="token-green">'复制下载链接'</span>, () => {
+  <span class="token-cyan">GM_setClipboard</span>(downloadUrl)
+})</div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <section class="bands" id="features">
+      <article class="band">
+        <h2>轻量但够用</h2>
+        <p>只围绕真实 userscript 的核心路径：安装、匹配、运行、启停、调试。没有在线市场和云同步，也不把自用工具做成笨重平台。</p>
+      </article>
+      <article class="band">
+        <h2>为 Safari 留后路</h2>
+        <p>基于 Apple 支持的 Safari Web Extension 与 Manifest V3，用 Xcode 打包成 macOS App，让脚本管理器能稳定留在 Safari 里。</p>
+      </article>
+      <article class="band">
+        <h2>看得见的控制</h2>
+        <p>脚本源码、匹配规则、GM 存储和运行错误都能在管理页检查。出问题时，先知道是谁在什么时候失败。</p>
+      </article>
+    </section>
+
+    <section class="install" id="install">
+      <h2>自己打包，自己掌控。</h2>
+      <div class="terminal" aria-label="安装命令">
+        <span class="prompt">$</span> git clone https://github.com/QingZzao/userscript-manager-safari-extension.git<br>
+        <span class="prompt">$</span> cd userscript-manager-safari-extension<br>
+        <span class="prompt">$</span> ./scripts/build-and-install.sh
+      </div>
+    </section>
+
+    <footer class="footer">
+      <span>UserScript Manager Safari · 轻量、本机、自用优先</span>
+      <span>Released under the MIT License</span>
+    </footer>
+  </main>
+</body>
+</html>

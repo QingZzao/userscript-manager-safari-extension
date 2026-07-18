@@ -2,6 +2,8 @@
 
 本项目是一个 macOS Safari 自用轻量用户脚本管理器，用来替代当前不再维护或无法正常使用的 Tampermonkey Classic。
 
+宣传页：[promo/index.html](promo/index.html)
+
 ## 当前能力
 
 - 从 `.user.js` 原始链接安装脚本。
@@ -128,3 +130,7 @@ open /private/tmp/userscript-manager-safari-derived/Build/Products/Debug/Userscr
 - 初版使用 `<all_urls>` 权限，方便通用脚本管理；请只安装可信脚本。
 - 初版不包含在线脚本市场、自动订阅、复杂编辑器、云同步或 App Store 上架流程。
 - 如果修改 `extension/` 源码，构建前需要同步到 `UserscriptManagerSafari/UserscriptManagerSafari Extension/Resources/`。
+
+## 许可证
+
+本项目基于 MIT License 开源，详见 `LICENSE`。
