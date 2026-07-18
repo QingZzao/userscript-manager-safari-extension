@@ -47,6 +47,19 @@
     node.remove();
   }
 
+  function reportScriptError(script, detail) {
+    window.postMessage({
+      scope: 'userscript-manager-page',
+      type: 'logs:add',
+      scriptId: script.id,
+      scriptName: script.meta.name || script.id,
+      level: 'error',
+      url: location.href,
+      message: detail.message,
+      stack: detail.stack
+    }, '*');
+  }
+
   async function runScript(script) {
     const api = window.__USM_createGMApi(script);
     const names = Object.keys(api);
@@ -70,6 +83,7 @@
       };
       window.__USM_LAST_ERROR = detail;
       document.documentElement.dataset.userscriptManagerError = detail.message;
+      reportScriptError(script, detail);
       console.error('[UserScript Manager] script failed:', script.meta.name, error);
     }
   }

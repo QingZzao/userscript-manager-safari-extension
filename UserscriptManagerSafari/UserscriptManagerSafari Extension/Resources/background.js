@@ -2,6 +2,7 @@ const api = globalThis.browser || globalThis.chrome;
 const SCRIPT_STORE_KEY = 'usm:scripts';
 const RESOURCE_PREFIX = 'usm:resource:';
 const VALUE_PREFIX = 'usm:value:';
+const LOG_PREFIX = 'usm:logs:';
 
 function storageGet(key) {
   const result = api.storage.local.get(key);
@@ -37,6 +38,10 @@ function scriptValueKey(scriptId, key) {
 
 function resourceKey(scriptId, name) {
   return RESOURCE_PREFIX + scriptId + ':' + name;
+}
+
+function logKey(scriptId) {
+  return LOG_PREFIX + scriptId;
 }
 
 async function handleRuntimeMessage(message) {
@@ -136,6 +141,31 @@ async function handleRuntimeMessage(message) {
     const text = await response.text();
     await storageSet({ [resourceKey(message.scriptId, message.name)]: text });
     return { ok: true, value: text };
+  }
+
+  if (message.type === 'logs:add') {
+    const key = logKey(message.scriptId);
+    const logs = Array.isArray(await storageGet(key)) ? await storageGet(key) : [];
+    const entry = {
+      time: Date.now(),
+      url: message.url || '',
+      scriptId: message.scriptId,
+      scriptName: message.scriptName || message.scriptId,
+      level: message.level || 'error',
+      message: message.message || '',
+      stack: message.stack || ''
+    };
+    await storageSet({ [key]: [entry, ...logs].slice(0, 30) });
+    return { ok: true };
+  }
+
+  if (message.type === 'logs:list') {
+    return { ok: true, value: Array.isArray(await storageGet(logKey(message.scriptId))) ? await storageGet(logKey(message.scriptId)) : [] };
+  }
+
+  if (message.type === 'logs:clear') {
+    await storageRemove(logKey(message.scriptId));
+    return { ok: true };
   }
 
   return { ok: false, error: 'Unknown message type: ' + message.type };

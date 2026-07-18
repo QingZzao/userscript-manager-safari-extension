@@ -323,16 +323,24 @@ textarea {
   overflow-wrap: anywhere;
 }
 
-.source-panel {
+.source-panel, .storage-panel, .logs-panel {
   display: grid;
   gap: 12px;
   min-width: 0;
 }
 
-.source-toolbar {
+.source-toolbar, .panel-toolbar {
   display: grid;
-  grid-template-columns: minmax(160px, 1fr) auto auto;
   gap: 10px;
+}
+
+.source-toolbar {
+  grid-template-columns: minmax(160px, 1fr) auto auto;
+}
+
+.panel-toolbar {
+  grid-template-columns: auto auto 1fr;
+  justify-items: start;
 }
 
 .source-view {
@@ -373,6 +381,68 @@ textarea {
 .line-code {
   padding: 0 14px;
   white-space: pre;
+}
+
+.storage-list, .logs-list {
+  display: grid;
+  gap: 12px;
+}
+
+.storage-row, .log-entry {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #dfe3e8;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.storage-row label {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.storage-row textarea {
+  min-height: 92px;
+  margin-top: 0;
+  resize: vertical;
+}
+
+.row-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.log-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.log-head strong {
+  color: #d33c32;
+  overflow-wrap: anywhere;
+}
+
+.log-head span, .log-url {
+  color: #61656b;
+  font-size: 12px;
+}
+
+.log-url {
+  overflow-wrap: anywhere;
+}
+
+.log-entry pre {
+  max-height: 220px;
+  margin: 0;
+  overflow: auto;
+  color: #30343a;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
 }
 
 .empty {
@@ -421,13 +491,21 @@ textarea {
     color: #aab0b8;
   }
 
-  .tabs, .rule-block pre, .source-view {
+  .tabs, .rule-block pre, .source-view, .storage-row, .log-entry {
     border-color: #343941;
   }
 
-  .rule-block pre {
+  .rule-block pre, .storage-row, .log-entry {
     background: #17191c;
     color: #d7dde6;
+  }
+
+  .log-entry pre {
+    color: #d7dde6;
+  }
+
+  .log-head span, .log-url {
+    color: #aab0b8;
   }
 }
 
@@ -444,7 +522,7 @@ textarea {
     text-align: left;
   }
 
-  .field-row, .manager-layout, .source-toolbar {
+  .field-row, .manager-layout, .source-toolbar, .panel-toolbar {
     grid-template-columns: 1fr;
   }
 

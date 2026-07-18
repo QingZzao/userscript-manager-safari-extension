@@ -131,7 +131,7 @@ function createTabButton(id, label) {
   button.textContent = label;
   button.addEventListener('click', () => {
     selectedTab = id;
-    renderDetail();
+    renderDetail().catch((error) => setStatus(String(error.message || error), true));
   });
   return button;
 }
@@ -150,10 +150,39 @@ function createRuleBlock(label, values) {
   block.className = 'rule-block';
   const title = document.createElement('h3');
   const pre = document.createElement('pre');
-  title.textContent = label + ' (' + ((values && values.length) || 0) + ')';
-  pre.textContent = values && values.length ? values.join('\n') : '无';
+  const lines = normalizeLines(values);
+  title.textContent = label + ' (' + lines.length + ')';
+  pre.textContent = lines.length ? lines.join('\n') : '无';
   block.append(title, pre);
   return block;
+}
+
+function normalizeLines(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value.map((item) => {
+    if (item && typeof item === 'object') return Object.values(item).join(' ');
+    return String(item);
+  });
+  if (typeof value === 'object') return Object.entries(value).map(([key, item]) => {
+    if (item && typeof item === 'object') return key + ' ' + Object.values(item).join(' ');
+    return key + ' ' + String(item);
+  });
+  return [String(value)];
+}
+
+function stringifyValue(value) {
+  if (typeof value === 'string') return value;
+  return JSON.stringify(value, null, 2);
+}
+
+function parseValueInput(text) {
+  const trimmed = text.trim();
+  if (!trimmed) return '';
+  try {
+    return JSON.parse(trimmed);
+  } catch (error) {
+    return text;
+  }
 }
 
 function sourceWithLineNumbers(source, keyword = '') {
@@ -226,7 +255,7 @@ function renderGrants(script) {
   wrap.append(
     createRuleBlock('@grant', meta.grant),
     createRuleBlock('@require', meta.require),
-    createRuleBlock('@resource', (meta.resource || []).map((item) => item.name + ' ' + item.url))
+    createRuleBlock('@resource', meta.resource)
   );
   return wrap;
 }
@@ -254,7 +283,107 @@ function renderSource(script) {
   return wrap;
 }
 
-function renderDetail() {
+async function renderStorage(script) {
+  const response = await sendMessage({ type: 'gm:getAllValues', scriptId: script.id });
+  const values = response && response.value ? response.value : {};
+  const entries = Object.entries(values).sort(([left], [right]) => left.localeCompare(right));
+  const wrap = document.createElement('div');
+  wrap.className = 'storage-panel';
+  wrap.innerHTML = `
+    <div class="panel-toolbar">
+      <button id="refreshStorage" class="secondary">刷新</button>
+      <button id="copyStorage" class="secondary">复制全部</button>
+    </div>
+    <div class="storage-list"></div>
+  `;
+  const list = wrap.querySelector('.storage-list');
+  if (!entries.length) {
+    const empty = document.createElement('div');
+    empty.className = 'empty';
+    empty.textContent = '这个脚本还没有 GM 存储值。';
+    list.appendChild(empty);
+  } else {
+    entries.forEach(([key, value]) => {
+      const row = document.createElement('section');
+      row.className = 'storage-row';
+      row.innerHTML = `
+        <label></label>
+        <textarea spellcheck="false"></textarea>
+        <div class="row-actions">
+          <button class="save secondary">保存</button>
+          <button class="delete danger">删除</button>
+        </div>
+      `;
+      row.querySelector('label').textContent = key;
+      row.querySelector('textarea').value = stringifyValue(value);
+      row.querySelector('.save').addEventListener('click', async () => {
+        await sendMessage({ type: 'gm:setValue', scriptId: script.id, key, value: parseValueInput(row.querySelector('textarea').value) });
+        setStatus('已保存 GM 值：' + key);
+        await renderDetail();
+      });
+      row.querySelector('.delete').addEventListener('click', async () => {
+        await sendMessage({ type: 'gm:deleteValue', scriptId: script.id, key });
+        setStatus('已删除 GM 值：' + key);
+        await renderDetail();
+      });
+      list.appendChild(row);
+    });
+  }
+  wrap.querySelector('#refreshStorage').addEventListener('click', () => renderDetail().catch((error) => setStatus(String(error.message || error), true)));
+  wrap.querySelector('#copyStorage').addEventListener('click', async () => {
+    await navigator.clipboard.writeText(JSON.stringify(values, null, 2));
+    setStatus('GM 存储已复制');
+  });
+  return wrap;
+}
+
+async function renderLogs(script) {
+  const response = await sendMessage({ type: 'logs:list', scriptId: script.id });
+  const logs = response && response.value ? response.value : [];
+  const wrap = document.createElement('div');
+  wrap.className = 'logs-panel';
+  wrap.innerHTML = `
+    <div class="panel-toolbar">
+      <button id="refreshLogs" class="secondary">刷新</button>
+      <button id="clearLogs" class="danger">清空日志</button>
+    </div>
+    <div class="logs-list"></div>
+  `;
+  const list = wrap.querySelector('.logs-list');
+  if (!logs.length) {
+    const empty = document.createElement('div');
+    empty.className = 'empty';
+    empty.textContent = '暂时没有记录到脚本错误。';
+    list.appendChild(empty);
+  } else {
+    logs.forEach((log) => {
+      const entry = document.createElement('article');
+      entry.className = 'log-entry';
+      entry.innerHTML = `
+        <div class="log-head">
+          <strong></strong>
+          <span></span>
+        </div>
+        <div class="log-url"></div>
+        <pre></pre>
+      `;
+      entry.querySelector('strong').textContent = log.message || '未知错误';
+      entry.querySelector('span').textContent = formatDate(log.time);
+      entry.querySelector('.log-url').textContent = log.url || '未知页面';
+      entry.querySelector('pre').textContent = log.stack || log.message || '';
+      list.appendChild(entry);
+    });
+  }
+  wrap.querySelector('#refreshLogs').addEventListener('click', () => renderDetail().catch((error) => setStatus(String(error.message || error), true)));
+  wrap.querySelector('#clearLogs').addEventListener('click', async () => {
+    await sendMessage({ type: 'logs:clear', scriptId: script.id });
+    setStatus('错误日志已清空');
+    await renderDetail();
+  });
+  return wrap;
+}
+
+async function renderDetail() {
   const script = scriptsCache.find((item) => item.id === selectedScriptId);
   detailEl.innerHTML = '';
   if (!script) {
@@ -298,17 +427,31 @@ function renderDetail() {
     createTabButton('overview', '概览'),
     createTabButton('rules', '匹配规则'),
     createTabButton('grants', '权限/API'),
+    createTabButton('storage', '存储'),
+    createTabButton('logs', '错误日志'),
     createTabButton('source', '源码')
   );
   const content = detailEl.querySelector('.tab-content');
-  const body = selectedTab === 'rules'
-    ? renderRules(script)
-    : selectedTab === 'grants'
-      ? renderGrants(script)
-      : selectedTab === 'source'
-        ? renderSource(script)
-        : renderOverview(script);
-  content.appendChild(body);
+  try {
+    const body = selectedTab === 'rules'
+      ? renderRules(script)
+      : selectedTab === 'grants'
+        ? renderGrants(script)
+        : selectedTab === 'storage'
+          ? await renderStorage(script)
+          : selectedTab === 'logs'
+            ? await renderLogs(script)
+            : selectedTab === 'source'
+              ? renderSource(script)
+              : renderOverview(script);
+    content.appendChild(body);
+  } catch (error) {
+    const box = document.createElement('div');
+    box.className = 'empty';
+    box.textContent = String(error && error.message ? error.message : error);
+    content.appendChild(box);
+    setStatus(box.textContent, true);
+  }
 }
 
 async function render() {
@@ -323,11 +466,11 @@ async function render() {
     empty.className = 'empty';
     empty.textContent = '还没有安装脚本。可以从 .user.js 链接或源码安装。';
     listEl.appendChild(empty);
-    renderDetail();
+    await renderDetail();
     return;
   }
   scripts.forEach((script) => listEl.appendChild(createListItem(script)));
-  renderDetail();
+  await renderDetail();
 }
 
 document.querySelector('#installUrl').addEventListener('click', async () => {
