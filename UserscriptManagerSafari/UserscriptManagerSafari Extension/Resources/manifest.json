@@ -1,0 +1,53 @@
+{
+  "manifest_version": 3,
+  "name": "UserScript Manager Safari",
+  "version": "0.1.0",
+  "description": "本机自用：在 Safari 中安装、管理并运行用户脚本的轻量管理器。",
+  "icons": {
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "permissions": [
+    "storage",
+    "unlimitedStorage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "UserScript Manager",
+    "default_popup": "ui/popup.html"
+  },
+  "options_page": "ui/options.html",
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "exclude_matches": [
+        "file://*/*"
+      ],
+      "js": [
+        "core/metadata.js",
+        "core/matcher.js",
+        "content/runner.js"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "content/page-runtime.js",
+        "core/gm-page-api.js"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ]
+}

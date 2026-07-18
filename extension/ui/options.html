@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>UserScript Manager Safari</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <h1>UserScript Manager Safari</h1>
+        <p>本机自用的 Safari 用户脚本管理器。扩展会读取和修改已授权网站页面，请只安装可信脚本。</p>
+      </div>
+      <span id="status" class="status">准备就绪</span>
+    </header>
+
+    <section class="install-panel">
+      <div class="field-row">
+        <input id="scriptUrl" type="url" placeholder="粘贴 .user.js 原始链接">
+        <button id="installUrl">从链接安装</button>
+      </div>
+      <textarea id="scriptSource" spellcheck="false" placeholder="或粘贴完整 userscript 源码"></textarea>
+      <div class="actions">
+        <button id="installSource">从源码安装</button>
+        <button id="clearEditor" class="secondary">清空</button>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-title">
+        <h2>已安装脚本</h2>
+        <button id="refresh" class="secondary">刷新</button>
+      </div>
+      <div id="scriptList" class="script-list"></div>
+    </section>
+  </main>
+  <script src="../core/metadata.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>
