@@ -1,6 +1,6 @@
 # UserScript Manager Safari Extension
 
-本项目是一个 macOS Safari 自用轻量用户脚本管理器，用来替代当前不再维护或无法正常使用的 Tampermonkey Classic。
+Tampermonkey Classic 不再更新之后，Safari 用户脚本还有另一条路。本项目是一个 macOS Safari 自用轻量用户脚本管理器，已在当前最新 macOS 测试版环境中完成本机打包和安装验证。
 
 宣传页：[promo/index.html](promo/index.html)
 
