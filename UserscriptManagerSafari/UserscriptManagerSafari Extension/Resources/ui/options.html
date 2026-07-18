@@ -28,12 +28,17 @@
       </div>
     </section>
 
-    <section>
+    <section class="manager-panel">
       <div class="section-title">
         <h2>已安装脚本</h2>
         <button id="refresh" class="secondary">刷新</button>
       </div>
-      <div id="scriptList" class="script-list"></div>
+      <div class="manager-layout">
+        <aside id="scriptList" class="script-list"></aside>
+        <section id="scriptDetail" class="script-detail empty-detail">
+          <div class="detail-placeholder">选择一个脚本查看详情和源码。</div>
+        </section>
+      </div>
     </section>
   </main>
   <script src="../core/metadata.js"></script>

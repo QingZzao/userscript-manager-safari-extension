@@ -1,8 +1,12 @@
 const api = globalThis.browser || globalThis.chrome;
 const statusEl = document.querySelector('#status');
 const listEl = document.querySelector('#scriptList');
+const detailEl = document.querySelector('#scriptDetail');
 const sourceEl = document.querySelector('#scriptSource');
 const urlEl = document.querySelector('#scriptUrl');
+let scriptsCache = [];
+let selectedScriptId = '';
+let selectedTab = 'overview';
 
 function setStatus(text, isError = false) {
   statusEl.textContent = text;
@@ -80,52 +84,250 @@ function matchLine(script) {
   return parts.join('\n') || '未声明匹配规则';
 }
 
-function createCard(script) {
-  const card = document.createElement('article');
-  card.className = 'script-card';
+function countLine(label, values) {
+  const count = values && values.length ? values.length : 0;
+  return label + ' ' + count + ' 条';
+}
+
+function listSummary(script) {
   const meta = script.meta || {};
-  card.innerHTML = `
-    <div class="script-main">
+  return [
+    countLine('@match', meta.match),
+    countLine('@include', meta.include),
+    countLine('@exclude', meta.exclude)
+  ].join(' · ');
+}
+
+function formatDate(value) {
+  if (!value) return '未知';
+  return new Date(value).toLocaleString('zh-CN');
+}
+
+function createListItem(script) {
+  const item = document.createElement('button');
+  item.className = 'script-item' + (script.id === selectedScriptId ? ' selected' : '');
+  item.type = 'button';
+  const meta = script.meta || {};
+  item.innerHTML = `
+    <div class="script-item-name"></div>
+    <div class="script-item-meta"></div>
+    <div class="script-item-summary"></div>
+  `;
+  item.querySelector('.script-item-name').textContent = meta.name || script.id;
+  item.querySelector('.script-item-meta').textContent = metaLine(script);
+  item.querySelector('.script-item-summary').textContent = listSummary(script);
+  item.addEventListener('click', () => {
+    selectedScriptId = script.id;
+    selectedTab = 'overview';
+    render();
+  });
+  return item;
+}
+
+function createTabButton(id, label) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'tab-button' + (selectedTab === id ? ' selected' : '');
+  button.textContent = label;
+  button.addEventListener('click', () => {
+    selectedTab = id;
+    renderDetail();
+  });
+  return button;
+}
+
+function createKeyValue(label, value) {
+  const row = document.createElement('div');
+  row.className = 'kv-row';
+  row.innerHTML = '<dt></dt><dd></dd>';
+  row.querySelector('dt').textContent = label;
+  row.querySelector('dd').textContent = value || '无';
+  return row;
+}
+
+function createRuleBlock(label, values) {
+  const block = document.createElement('section');
+  block.className = 'rule-block';
+  const title = document.createElement('h3');
+  const pre = document.createElement('pre');
+  title.textContent = label + ' (' + ((values && values.length) || 0) + ')';
+  pre.textContent = values && values.length ? values.join('\n') : '无';
+  block.append(title, pre);
+  return block;
+}
+
+function sourceWithLineNumbers(source, keyword = '') {
+  const lowerKeyword = keyword.trim().toLowerCase();
+  return source.split('\n').map((line, index) => {
+    const row = document.createElement('div');
+    row.className = 'code-line';
+    if (lowerKeyword && line.toLowerCase().includes(lowerKeyword)) row.classList.add('hit');
+    const number = document.createElement('span');
+    number.className = 'line-number';
+    number.textContent = String(index + 1);
+    const code = document.createElement('span');
+    code.className = 'line-code';
+    code.textContent = line || ' ';
+    row.append(number, code);
+    return row;
+  });
+}
+
+async function copySource(script) {
+  await navigator.clipboard.writeText(script.source || '');
+  setStatus('源码已复制');
+}
+
+function downloadSource(script) {
+  const meta = script.meta || {};
+  const safeName = (meta.name || script.id || 'userscript').replace(/[\\/:*?"<>|]+/g, '-');
+  const blob = new Blob([script.source || ''], { type: 'text/javascript;charset=utf-8' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = safeName + '.user.js';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+}
+
+function renderOverview(script) {
+  const meta = script.meta || {};
+  const dl = document.createElement('dl');
+  dl.className = 'kv-list';
+  dl.append(
+    createKeyValue('描述', meta.description || '无描述'),
+    createKeyValue('版本', meta.version),
+    createKeyValue('作者', meta.author),
+    createKeyValue('安装来源', script.sourceUrl),
+    createKeyValue('安装时间', formatDate(script.installedAt)),
+    createKeyValue('更新时间', formatDate(script.updatedAt)),
+    createKeyValue('脚本 ID', script.id)
+  );
+  return dl;
+}
+
+function renderRules(script) {
+  const meta = script.meta || {};
+  const wrap = document.createElement('div');
+  wrap.className = 'rule-grid';
+  wrap.append(
+    createRuleBlock('@match', meta.match),
+    createRuleBlock('@include', meta.include),
+    createRuleBlock('@exclude', meta.exclude)
+  );
+  return wrap;
+}
+
+function renderGrants(script) {
+  const meta = script.meta || {};
+  const wrap = document.createElement('div');
+  wrap.className = 'rule-grid';
+  wrap.append(
+    createRuleBlock('@grant', meta.grant),
+    createRuleBlock('@require', meta.require),
+    createRuleBlock('@resource', (meta.resource || []).map((item) => item.name + ' ' + item.url))
+  );
+  return wrap;
+}
+
+function renderSource(script) {
+  const wrap = document.createElement('div');
+  wrap.className = 'source-panel';
+  wrap.innerHTML = `
+    <div class="source-toolbar">
+      <input id="sourceSearch" type="search" placeholder="搜索源码">
+      <button id="copySource" class="secondary">复制源码</button>
+      <button id="downloadSource" class="secondary">下载 .user.js</button>
+    </div>
+    <pre class="source-view" aria-label="脚本源码"></pre>
+  `;
+  const pre = wrap.querySelector('.source-view');
+  const search = wrap.querySelector('#sourceSearch');
+  const paint = () => {
+    pre.replaceChildren(...sourceWithLineNumbers(script.source || '', search.value));
+  };
+  search.addEventListener('input', paint);
+  wrap.querySelector('#copySource').addEventListener('click', () => copySource(script).catch((error) => setStatus(String(error.message || error), true)));
+  wrap.querySelector('#downloadSource').addEventListener('click', () => downloadSource(script));
+  paint();
+  return wrap;
+}
+
+function renderDetail() {
+  const script = scriptsCache.find((item) => item.id === selectedScriptId);
+  detailEl.innerHTML = '';
+  if (!script) {
+    detailEl.className = 'script-detail empty-detail';
+    const placeholder = document.createElement('div');
+    placeholder.className = 'detail-placeholder';
+    placeholder.textContent = scriptsCache.length ? '选择一个脚本查看详情和源码。' : '还没有安装脚本。';
+    detailEl.appendChild(placeholder);
+    return;
+  }
+  const meta = script.meta || {};
+  detailEl.className = 'script-detail';
+  detailEl.innerHTML = `
+    <header class="detail-header">
       <div>
-        <div class="script-name"></div>
-        <div class="meta"></div>
+        <h2 class="detail-title"></h2>
+        <p class="detail-meta"></p>
       </div>
-      <div class="card-actions">
+      <div class="detail-actions">
         <button class="toggle secondary"></button>
         <button class="delete danger">删除</button>
       </div>
-    </div>
-    <p class="description"></p>
-    <pre class="matches"></pre>
+    </header>
+    <nav class="tabs" aria-label="脚本详情"></nav>
+    <div class="tab-content"></div>
   `;
-  card.querySelector('.script-name').textContent = meta.name || script.id;
-  card.querySelector('.meta').textContent = metaLine(script);
-  card.querySelector('.description').textContent = meta.description || '无描述';
-  card.querySelector('.matches').textContent = matchLine(script);
-  card.querySelector('.toggle').textContent = script.enabled === false ? '启用' : '停用';
-  card.querySelector('.toggle').addEventListener('click', async () => {
+  detailEl.querySelector('.detail-title').textContent = meta.name || script.id;
+  detailEl.querySelector('.detail-meta').textContent = metaLine(script);
+  detailEl.querySelector('.toggle').textContent = script.enabled === false ? '启用' : '停用';
+  detailEl.querySelector('.toggle').addEventListener('click', async () => {
     await sendMessage({ type: 'scripts:update', id: script.id, patch: { enabled: script.enabled === false } });
     await render();
   });
-  card.querySelector('.delete').addEventListener('click', async () => {
+  detailEl.querySelector('.delete').addEventListener('click', async () => {
     await sendMessage({ type: 'scripts:delete', id: script.id });
+    selectedScriptId = '';
     await render();
   });
-  return card;
+  const tabs = detailEl.querySelector('.tabs');
+  tabs.append(
+    createTabButton('overview', '概览'),
+    createTabButton('rules', '匹配规则'),
+    createTabButton('grants', '权限/API'),
+    createTabButton('source', '源码')
+  );
+  const content = detailEl.querySelector('.tab-content');
+  const body = selectedTab === 'rules'
+    ? renderRules(script)
+    : selectedTab === 'grants'
+      ? renderGrants(script)
+      : selectedTab === 'source'
+        ? renderSource(script)
+        : renderOverview(script);
+  content.appendChild(body);
 }
 
 async function render() {
   const response = await sendMessage({ type: 'scripts:list' });
   const scripts = response && response.scripts ? response.scripts : [];
+  scriptsCache = scripts;
+  if (!selectedScriptId && scripts[0]) selectedScriptId = scripts[0].id;
+  if (selectedScriptId && !scripts.some((script) => script.id === selectedScriptId)) selectedScriptId = scripts[0] ? scripts[0].id : '';
   listEl.innerHTML = '';
   if (scripts.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'empty';
     empty.textContent = '还没有安装脚本。可以从 .user.js 链接或源码安装。';
     listEl.appendChild(empty);
+    renderDetail();
     return;
   }
-  scripts.forEach((script) => listEl.appendChild(createCard(script)));
+  scripts.forEach((script) => listEl.appendChild(createListItem(script)));
+  renderDetail();
 }
 
 document.querySelector('#installUrl').addEventListener('click', async () => {
