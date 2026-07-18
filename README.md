@@ -36,7 +36,27 @@
 - `UserscriptManagerSafari/UserscriptManagerSafari.xcodeproj`：Safari Web Extension 的 Xcode 工程。
 - `UserscriptManagerSafari/UserscriptManagerSafari Extension/Resources/`：Xcode 打包时使用的扩展资源，当前与 `extension/` 内容保持一致。
 
-## 自己打包
+## 推荐：稳定安装到 Safari
+
+开发调试时，Xcode 的构建产物通常在 `/private/tmp` 或 DerivedData 目录里。这个位置不适合长期给 Safari 识别，重启或系统清理后可能出现“扩展暂时消失，之后又回来”的现象。
+
+推荐使用项目脚本构建并复制到固定位置：
+
+```bash
+cd userscript-manager-safari-extension
+./scripts/build-and-install.sh
+```
+
+脚本会完成这些动作：
+
+- 同步 `extension/` 到 Xcode 打包使用的 `Resources/`。
+- 使用 `/Applications/Xcode-beta.app` 构建；如果你手动设置了 `DEVELOPER_DIR`，会优先使用你的设置。
+- 把构建出的 App 安装到 `/Applications/UserScriptManagerSafari.app`。
+- 打开这个 App，让 Safari 重新注册扩展。
+
+完成后，到 Safari 设置里的“扩展”中启用 `UserScript Manager Safari`。如果 Safari 仍然看不到扩展，先确认 Safari 的“开发”菜单里允许未签名扩展，然后重新运行上面的脚本。
+
+## 手动打包
 
 推荐使用完整 Xcode 构建。当前机器验证过的方式是使用 `/Applications/Xcode-beta.app`，并把 DerivedData 放到 `/private/tmp`，可以避开部分云盘/文件提供器目录导致的签名资源属性问题。
 
@@ -59,7 +79,7 @@ DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer \
 
 如果你使用正式版 Xcode，可以把 `DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer` 去掉，或替换成自己的 Xcode 路径。
 
-## 自己安装到 Safari
+## 手动安装到 Safari
 
 1. 用 Xcode 打开 `UserscriptManagerSafari/UserscriptManagerSafari.xcodeproj`。
 2. 选择 `UserscriptManagerSafari` 这个 Mac App target 运行。
@@ -68,7 +88,7 @@ DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer \
 5. 粘贴 `.user.js` 链接或源码安装脚本。
 6. 打开目标网页验证脚本是否生效。
 
-也可以直接打开命令行构建出的 App：
+也可以直接打开命令行构建出的 App。不过这个路径只适合临时调试，不建议作为长期安装位置：
 
 ```bash
 open /private/tmp/userscript-manager-safari-derived/Build/Products/Debug/UserscriptManagerSafari.app

@@ -1,0 +1,13 @@
+# 更新说明
+
+## 0.1.1 - 2026-07-18
+
+- 新增 `scripts/build-and-install.sh`，用于一键同步资源、使用 Xcode beta 构建、安装到 `/Applications/UserScriptManagerSafari.app` 并打开 App 注册 Safari 扩展。
+- 安装脚本会在复制稳定 App 后清理 `/private/tmp` 中的临时 Debug App 注册，减少 Safari 出现两个同名扩展的情况。
+- 优化管理页脚本列表的可读性，长脚本名、描述、`@match`、`@include`、`@exclude` 现在会自动换行，超长匹配规则会在卡片内滚动。
+- README 增加稳定安装流程，说明为什么不建议长期使用 `/private/tmp` 的 Debug 构建产物。
+
+## 0.1.0 - 2026-07-18
+
+- 初始版本：支持安装、管理和运行 Safari 用户脚本。
+- 提供基础 userscript metadata 解析、匹配规则、`@require`、`@resource` 与常用 GM API 兼容层。

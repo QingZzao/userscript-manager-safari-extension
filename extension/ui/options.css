@@ -123,29 +123,51 @@ textarea {
 .script-card {
   display: grid;
   gap: 12px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .script-main {
   display: flex;
   justify-content: space-between;
   gap: 16px;
+  min-width: 0;
+}
+
+.script-main > div:first-child {
+  min-width: 0;
 }
 
 .script-name {
   font-weight: 700;
   font-size: 16px;
+  overflow-wrap: anywhere;
 }
 
 .meta {
   color: #61656b;
   font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.description {
+  overflow-wrap: anywhere;
 }
 
 .matches {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 12px;
   color: #4d5157;
+  margin: 0;
+  max-height: 140px;
+  overflow: auto;
   overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.card-actions {
+  flex: 0 0 auto;
 }
 
 .empty {
