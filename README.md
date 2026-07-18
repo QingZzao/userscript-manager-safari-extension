@@ -26,6 +26,7 @@
   - `GM_removeValueChangeListener`
   - `GM_openInTab`
   - `GM_notification`
+  - `GM_setClipboard`
 - 安装时缓存 `@require` 依赖，运行时按顺序注入。
 - 按需读取并缓存 `@resource` 文本资源。
 - 对 AC-baidu 这类设置页提供基础跨页面 GM 值同步。

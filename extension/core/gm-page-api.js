@@ -248,6 +248,35 @@
       setTimeout(() => box.remove(), Number(config.timeout || 4000));
     }
 
+    function setClipboard(text) {
+      const value = String(text || '');
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        const result = navigator.clipboard.writeText(value);
+        if (result && typeof result.catch === 'function') {
+          result.catch(() => fallbackSetClipboard(value));
+        }
+        return result;
+      }
+      fallbackSetClipboard(value);
+      return undefined;
+    }
+
+    function fallbackSetClipboard(text) {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('readonly', '');
+      textarea.style.cssText = [
+        'position:fixed',
+        'left:-999999px',
+        'top:-999999px',
+        'opacity:0'
+      ].join(';');
+      document.documentElement.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      textarea.remove();
+    }
+
     const gm = {
       info: {
         script: {
@@ -257,7 +286,7 @@
           author: script.meta.author
         },
         scriptHandler: 'UserScript Manager Safari',
-        version: '0.1.3'
+        version: '0.1.4'
       },
       addStyle,
       getValue: (key, fallback) => request('gm:getValue', { scriptId: script.id, key }).then((value) => typeof value === 'undefined' ? fallback : value),
@@ -283,7 +312,8 @@
       addValueChangeListener,
       removeValueChangeListener,
       openInTab,
-      notification
+      notification,
+      setClipboard
     };
 
     return {
@@ -311,6 +341,7 @@
       GM_removeValueChangeListener: removeValueChangeListener,
       GM_openInTab: openInTab,
       GM_notification: notification,
+      GM_setClipboard: setClipboard,
       GM: gm
     };
   };
