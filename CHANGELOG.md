@@ -1,5 +1,10 @@
 # 更新说明
 
+## 0.1.8 - 2026-07-19
+
+- 调整 README 安装说明结构，将 GitHub Release DMG 作为默认推荐安装方式。
+- 将源码构建和手动 Xcode 安装说明降级为开发者/维护者选项。
+
 ## 0.1.7 - 2026-07-19
 
 - 新增 `scripts/package-dmg.sh`，可构建 Release App 并生成未 Developer ID 签名、未公证的 DMG 测试安装包。
