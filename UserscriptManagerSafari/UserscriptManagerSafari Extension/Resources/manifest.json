@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "UserScript Manager Safari",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "本机自用：在 Safari 中安装、管理并运行用户脚本的轻量管理器。",
   "icons": {
     "48": "icons/icon-48.png",

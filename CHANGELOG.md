@@ -1,5 +1,10 @@
 # 更新说明
 
+## 0.1.7 - 2026-07-19
+
+- 新增 `scripts/package-dmg.sh`，可构建 Release App 并生成未 Developer ID 签名、未公证的 DMG 测试安装包。
+- README 增加 GitHub Release DMG 分发说明和首次打开安全提示。
+
 ## 0.1.6 - 2026-07-19
 
 - 优化 README 和宣传页定位文案，强调 Tampermonkey Classic 停更后 Safari 用户脚本的替代路线。

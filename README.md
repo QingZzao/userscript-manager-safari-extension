@@ -59,6 +59,26 @@ cd userscript-manager-safari-extension
 
 完成后，到 Safari 设置里的“扩展”中启用 `UserScript Manager Safari`。如果 Safari 仍然看不到扩展，先确认 Safari 的“开发”菜单里允许未签名扩展，然后重新运行上面的脚本。
 
+## GitHub Release 安装包
+
+项目会在 GitHub Release 中提供免费的未 Developer ID 签名、未公证 DMG 测试安装包。这个包不需要 Apple Developer Program，但首次打开时 macOS 可能提示“无法验证开发者”。
+
+下载 DMG 后：
+
+1. 打开 `UserScriptManagerSafari-*.dmg`。
+2. 把 `UserScriptManagerSafari.app` 拖到 `Applications`。
+3. 首次打开如果被 macOS 拦截，右键点击 App，选择“打开”，或到“系统设置 > 隐私与安全性”中允许打开。
+4. 打开 App 后，到 Safari 设置里的“扩展”中启用 `UserScript Manager Safari`。
+
+维护者生成 DMG：
+
+```bash
+cd userscript-manager-safari-extension
+./scripts/package-dmg.sh
+```
+
+生成的安装包会输出到 `dist/`。注意：这不是 Developer ID 签名/公证版本，适合开源项目早期测试分发；如果要给普通用户提供更顺滑的安装体验，需要 Apple Developer Program、Developer ID 签名和 notarization 公证。
+
 ## 手动打包
 
 推荐使用完整 Xcode 构建。当前机器验证过的方式是使用 `/Applications/Xcode-beta.app`，并把 DerivedData 放到 `/private/tmp`，可以避开部分云盘/文件提供器目录导致的签名资源属性问题。
