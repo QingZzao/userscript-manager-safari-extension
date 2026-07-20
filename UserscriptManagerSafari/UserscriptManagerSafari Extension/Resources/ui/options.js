@@ -4,6 +4,7 @@ const listEl = document.querySelector('#scriptList');
 const detailEl = document.querySelector('#scriptDetail');
 const sourceEl = document.querySelector('#scriptSource');
 const urlEl = document.querySelector('#scriptUrl');
+const backupFileEl = document.querySelector('#backupFile');
 let scriptsCache = [];
 let selectedScriptId = '';
 let selectedTab = 'overview';
@@ -218,6 +219,63 @@ function downloadSource(script) {
   link.click();
   link.remove();
   setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+}
+
+function downloadJson(filename, data) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+}
+
+function backupFilename() {
+  const stamp = new Date().toISOString().slice(0, 19).replace(/[-:T]/g, '');
+  return 'userscript-manager-safari-backup-' + stamp + '.json';
+}
+
+function readJsonFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener('load', () => {
+      try {
+        resolve(JSON.parse(String(reader.result || '')));
+      } catch (error) {
+        reject(new Error('备份文件不是有效的 JSON'));
+      }
+    });
+    reader.addEventListener('error', () => reject(new Error('读取备份文件失败')));
+    reader.readAsText(file);
+  });
+}
+
+async function exportBackup() {
+  const response = await sendMessage({ type: 'backup:export' });
+  if (!response || !response.ok) throw new Error(response && response.error ? response.error : '导出失败');
+  downloadJson(backupFilename(), response.value);
+  const scriptCount = Array.isArray(response.value.storage && response.value.storage['usm:scripts'])
+    ? response.value.storage['usm:scripts'].length
+    : 0;
+  setStatus('已导出备份：' + scriptCount + ' 个脚本');
+}
+
+async function importBackup(file) {
+  if (!file) return;
+  const backup = await readJsonFile(file);
+  const scriptCount = Array.isArray(backup && backup.storage && backup.storage['usm:scripts'])
+    ? backup.storage['usm:scripts'].length
+    : 0;
+  const confirmed = window.confirm('导入会替换当前 USM 脚本和存储数据。确定恢复这个备份吗？\n\n备份内脚本数量：' + scriptCount);
+  if (!confirmed) return;
+  const response = await sendMessage({ type: 'backup:import', backup });
+  if (!response || !response.ok) throw new Error(response && response.error ? response.error : '导入失败');
+  selectedScriptId = '';
+  selectedTab = 'overview';
+  setStatus('已导入备份：' + response.value.scriptCount + ' 个脚本，' + response.value.keyCount + ' 个存储项');
+  await render();
 }
 
 function renderOverview(script) {
@@ -498,5 +556,18 @@ document.querySelector('#clearEditor').addEventListener('click', () => {
 });
 
 document.querySelector('#refresh').addEventListener('click', render);
+
+document.querySelector('#exportBackup').addEventListener('click', () => {
+  exportBackup().catch((error) => setStatus(String(error.message || error), true));
+});
+
+document.querySelector('#importBackup').addEventListener('click', () => {
+  backupFileEl.value = '';
+  backupFileEl.click();
+});
+
+backupFileEl.addEventListener('change', () => {
+  importBackup(backupFileEl.files && backupFileEl.files[0]).catch((error) => setStatus(String(error.message || error), true));
+});
 
 render().catch((error) => setStatus(String(error.message || error), true));

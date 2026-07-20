@@ -3,6 +3,8 @@ const SCRIPT_STORE_KEY = 'usm:scripts';
 const RESOURCE_PREFIX = 'usm:resource:';
 const VALUE_PREFIX = 'usm:value:';
 const LOG_PREFIX = 'usm:logs:';
+const BACKUP_FORMAT = 'userscript-manager-safari-backup';
+const BACKUP_FORMAT_VERSION = 1;
 
 function storageGet(key) {
   const result = api.storage.local.get(key);
@@ -22,6 +24,19 @@ function storageRemove(keys) {
   const result = api.storage.local.remove(keys);
   if (result && typeof result.then === 'function') return result;
   return new Promise((resolve) => api.storage.local.remove(keys, resolve));
+}
+
+function storageGetAll() {
+  const result = api.storage.local.get(null);
+  if (result && typeof result.then === 'function') return result;
+  return new Promise((resolve) => api.storage.local.get(null, resolve));
+}
+
+function isManagedStorageKey(key) {
+  return key === SCRIPT_STORE_KEY
+    || key.startsWith(RESOURCE_PREFIX)
+    || key.startsWith(VALUE_PREFIX)
+    || key.startsWith(LOG_PREFIX);
 }
 
 async function getScripts() {
@@ -73,6 +88,48 @@ async function handleRuntimeMessage(message) {
     return { ok: true };
   }
 
+  if (message.type === 'backup:export') {
+    const all = await storageGetAll();
+    const storage = {};
+    Object.entries(all || {}).forEach(([key, value]) => {
+      if (isManagedStorageKey(key)) storage[key] = value;
+    });
+    return {
+      ok: true,
+      value: {
+        format: BACKUP_FORMAT,
+        formatVersion: BACKUP_FORMAT_VERSION,
+        exportedAt: Date.now(),
+        storage
+      }
+    };
+  }
+
+  if (message.type === 'backup:import') {
+    const backup = message.backup;
+    if (!backup || backup.format !== BACKUP_FORMAT || backup.formatVersion !== BACKUP_FORMAT_VERSION || !backup.storage || typeof backup.storage !== 'object') {
+      return { ok: false, error: '备份文件格式不正确' };
+    }
+    const incoming = {};
+    Object.entries(backup.storage).forEach(([key, value]) => {
+      if (isManagedStorageKey(key)) incoming[key] = value;
+    });
+    if (!Array.isArray(incoming[SCRIPT_STORE_KEY])) {
+      return { ok: false, error: '备份文件中没有有效的脚本列表' };
+    }
+    const all = await storageGetAll();
+    const existingKeys = Object.keys(all || {}).filter(isManagedStorageKey);
+    if (existingKeys.length) await storageRemove(existingKeys);
+    await storageSet(incoming);
+    return {
+      ok: true,
+      value: {
+        scriptCount: incoming[SCRIPT_STORE_KEY].length,
+        keyCount: Object.keys(incoming).length
+      }
+    };
+  }
+
   if (message.type === 'net:fetchText') {
     const response = await fetch(message.url, {
       method: message.method || 'GET',
@@ -119,13 +176,13 @@ async function handleRuntimeMessage(message) {
   }
 
   if (message.type === 'gm:listValues') {
-    const all = await new Promise((resolve) => api.storage.local.get(null, resolve));
+    const all = await storageGetAll();
     const prefix = VALUE_PREFIX + message.scriptId + ':';
     return { ok: true, value: Object.keys(all || {}).filter((key) => key.startsWith(prefix)).map((key) => key.slice(prefix.length)) };
   }
 
   if (message.type === 'gm:getAllValues') {
-    const all = await new Promise((resolve) => api.storage.local.get(null, resolve));
+    const all = await storageGetAll();
     const prefix = VALUE_PREFIX + message.scriptId + ':';
     const values = {};
     Object.entries(all || {}).forEach(([key, value]) => {
