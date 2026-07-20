@@ -16,29 +16,32 @@
       <span id="status" class="status">准备就绪</span>
     </header>
 
-    <section class="install-panel">
-      <div class="field-row">
-        <input id="scriptUrl" type="url" placeholder="粘贴 .user.js 原始链接">
-        <button id="installUrl">从链接安装</button>
-      </div>
-      <textarea id="scriptSource" spellcheck="false" placeholder="或粘贴完整 userscript 源码"></textarea>
-      <div class="actions">
-        <button id="installSource">从源码安装</button>
-        <button id="clearEditor" class="secondary">清空</button>
-      </div>
-    </section>
-
-    <section class="manager-panel">
-      <div class="section-title">
-        <h2>已安装脚本</h2>
-        <button id="refresh" class="secondary">刷新</button>
-      </div>
-      <div class="manager-layout">
+    <section class="workspace">
+      <section class="script-sidebar" aria-label="已安装脚本">
+        <div class="section-title">
+          <h2>已安装脚本</h2>
+          <button id="refresh" class="secondary">刷新</button>
+        </div>
         <aside id="scriptList" class="script-list"></aside>
+      </section>
+
+      <section class="work-area">
+        <section class="install-panel">
+          <div class="field-row">
+            <input id="scriptUrl" type="url" placeholder="粘贴 .user.js 原始链接">
+            <button id="installUrl">从链接安装</button>
+          </div>
+          <textarea id="scriptSource" spellcheck="false" placeholder="或粘贴完整 userscript 源码"></textarea>
+          <div class="actions">
+            <button id="installSource">从源码安装</button>
+            <button id="clearEditor" class="secondary">清空</button>
+          </div>
+        </section>
+
         <section id="scriptDetail" class="script-detail empty-detail">
           <div class="detail-placeholder">选择一个脚本查看详情和源码。</div>
         </section>
-      </div>
+      </section>
     </section>
   </main>
   <script src="../core/metadata.js"></script>
