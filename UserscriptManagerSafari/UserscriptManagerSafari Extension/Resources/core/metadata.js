@@ -16,7 +16,8 @@
       grant: [],
       require: [],
       resource: {},
-      runAt: 'document-end'
+      runAt: 'document-end',
+      sandbox: ''
     };
     if (!block) return meta;
 
@@ -39,7 +40,7 @@
       else if (key === 'resource') {
         const resource = value.match(/^(\S+)\s+(.+)$/);
         if (resource) meta.resource[resource[1]] = resource[2];
-      }
+      } else if (key === 'sandbox') meta.sandbox = value;
     });
 
     if (meta.match.length === 0 && meta.include.length === 0) {

@@ -1,5 +1,11 @@
 # 更新说明
 
+## 0.1.10 - 2026-07-20
+
+- 新增 `@sandbox` metadata 解析。
+- 对声明 `@sandbox JavaScript` 的脚本改用 content-world 执行，避开 GitHub 等站点的页面 CSP `unsafe-eval` 限制。
+- 为 content-world 执行路径补充常用 GM API、菜单命令、通知、打开标签页和剪贴板兼容。
+
 ## 0.1.9 - 2026-07-20
 
 - 优化管理页布局，改为左侧脚本列表、右上安装区、右下详情工作区。

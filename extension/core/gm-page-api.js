@@ -286,7 +286,7 @@
           author: script.meta.author
         },
         scriptHandler: 'UserScript Manager Safari',
-        version: '0.1.9'
+        version: '0.1.10'
       },
       addStyle,
       getValue: (key, fallback) => request('gm:getValue', { scriptId: script.id, key }).then((value) => typeof value === 'undefined' ? fallback : value),
