@@ -9,6 +9,7 @@ import SafariServices
 import os.log
 
 class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
+    private let storagePrefix = "userscript-manager-native-storage:"
 
     func beginRequest(with context: NSExtensionContext) {
         let request = context.inputItems.first as? NSExtensionItem
@@ -30,13 +31,57 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         os_log(.default, "Received message from browser.runtime.sendNativeMessage: %@ (profile: %@)", String(describing: message), profile?.uuidString ?? "none")
 
         let response = NSExtensionItem()
+        let responseMessage = handleNativeStorageMessage(message) ?? [ "echo": message as Any ]
         if #available(iOS 15.0, macOS 11.0, *) {
-            response.userInfo = [ SFExtensionMessageKey: [ "echo": message ] ]
+            response.userInfo = [ SFExtensionMessageKey: responseMessage ]
         } else {
-            response.userInfo = [ "message": [ "echo": message ] ]
+            response.userInfo = [ "message": responseMessage ]
         }
 
         context.completeRequest(returningItems: [ response ], completionHandler: nil)
+    }
+
+    private func handleNativeStorageMessage(_ message: Any?) -> [String: Any]? {
+        guard
+            let dictionary = message as? [String: Any],
+            dictionary["scope"] as? String == "userscript-manager-native-storage",
+            let type = dictionary["type"] as? String,
+            let key = dictionary["key"] as? String
+        else {
+            return nil
+        }
+
+        let defaults = UserDefaults.standard
+        let defaultsKey = storagePrefix + key
+
+        switch type {
+        case "get":
+            return [
+                "ok": true,
+                "value": defaults.object(forKey: defaultsKey) ?? NSNull()
+            ]
+        case "set":
+            guard let value = dictionary["value"], JSONSerialization.isValidJSONObject(["value": value]) else {
+                return [
+                    "ok": false,
+                    "error": "value is not JSON serializable"
+                ]
+            }
+            defaults.set(value, forKey: defaultsKey)
+            return [
+                "ok": defaults.synchronize()
+            ]
+        case "remove":
+            defaults.removeObject(forKey: defaultsKey)
+            return [
+                "ok": defaults.synchronize()
+            ]
+        default:
+            return [
+                "ok": false,
+                "error": "Unknown native storage message type: \(type)"
+            ]
+        }
     }
 
 }

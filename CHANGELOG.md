@@ -1,5 +1,20 @@
 # 更新说明
 
+## 0.1.14 - 2026-07-21
+
+- 补充英文 README，方便 GitHub 访客理解安装方式、能力范围和未签名 DMG 的限制。
+- 明确免费账户/未签名测试版可通过 Safari 的 `Add Temporary Extension...` 手动加载 `extension/` 源码目录。
+
+## 0.1.13 - 2026-07-21
+
+- 修复 Safari 重启后 `storage.local` 返回空脚本列表时没有触发恢复的问题。
+- 增加 native messaging 原生侧备份，将脚本列表同步保存到 Safari App Extension 的 `UserDefaults`，进一步降低 Safari Web 存储丢失导致脚本消失的概率。
+
+## 0.1.12 - 2026-07-21
+
+- 为已安装脚本列表增加 IndexedDB 镜像，Safari 重启后如果 `storage.local` 为空，可自动从镜像恢复脚本列表。
+- 读取脚本列表时会在恢复后回写 `storage.local`，减少关闭 Safari 后脚本消失的问题。
+
 ## 0.1.11 - 2026-07-20
 
 - 新增管理页一键导出备份，保存脚本列表、启停状态、GM 存储、资源缓存和错误日志。

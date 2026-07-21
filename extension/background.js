@@ -5,6 +5,81 @@ const VALUE_PREFIX = 'usm:value:';
 const LOG_PREFIX = 'usm:logs:';
 const BACKUP_FORMAT = 'userscript-manager-safari-backup';
 const BACKUP_FORMAT_VERSION = 1;
+const DB_NAME = 'userscript-manager-safari';
+const DB_VERSION = 1;
+const DB_STORE = 'kv';
+const NATIVE_APP_ID = 'local.qingzzao.UserscriptManagerSafari';
+
+function sendNativeStorageMessage(message) {
+  if (!api.runtime || !api.runtime.sendNativeMessage) return Promise.resolve(undefined);
+  try {
+    const result = api.runtime.sendNativeMessage(NATIVE_APP_ID, {
+      scope: 'userscript-manager-native-storage',
+      ...message
+    });
+    if (result && typeof result.then === 'function') return result;
+    return new Promise((resolve) => {
+      api.runtime.sendNativeMessage(NATIVE_APP_ID, {
+        scope: 'userscript-manager-native-storage',
+        ...message
+      }, resolve);
+    });
+  } catch (error) {
+    return Promise.resolve(undefined);
+  }
+}
+
+function openMirrorDb() {
+  return new Promise((resolve, reject) => {
+    if (!globalThis.indexedDB) {
+      resolve(null);
+      return;
+    }
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    request.addEventListener('upgradeneeded', () => {
+      request.result.createObjectStore(DB_STORE);
+    });
+    request.addEventListener('success', () => resolve(request.result));
+    request.addEventListener('error', () => reject(request.error || new Error('IndexedDB open failed')));
+  });
+}
+
+async function mirrorGet(key) {
+  const db = await openMirrorDb();
+  if (!db) return undefined;
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(DB_STORE, 'readonly');
+    const request = transaction.objectStore(DB_STORE).get(key);
+    request.addEventListener('success', () => resolve(request.result));
+    request.addEventListener('error', () => reject(request.error || new Error('IndexedDB get failed')));
+    transaction.addEventListener('complete', () => db.close());
+  });
+}
+
+async function mirrorSet(key, value) {
+  const db = await openMirrorDb();
+  if (!db) return;
+  await new Promise((resolve, reject) => {
+    const transaction = db.transaction(DB_STORE, 'readwrite');
+    transaction.objectStore(DB_STORE).put(value, key);
+    transaction.addEventListener('complete', resolve);
+    transaction.addEventListener('error', () => reject(transaction.error || new Error('IndexedDB set failed')));
+    transaction.addEventListener('abort', () => reject(transaction.error || new Error('IndexedDB set aborted')));
+  });
+  db.close();
+}
+
+async function persistentMirrorGet(key) {
+  const mirrored = await mirrorGet(key).catch(() => undefined);
+  if (Array.isArray(mirrored) && mirrored.length) return mirrored;
+  const nativeResponse = await sendNativeStorageMessage({ type: 'get', key }).catch(() => undefined);
+  return nativeResponse && nativeResponse.ok ? nativeResponse.value : undefined;
+}
+
+async function persistentMirrorSet(key, value) {
+  await mirrorSet(key, value).catch(() => {});
+  await sendNativeStorageMessage({ type: 'set', key, value }).catch(() => {});
+}
 
 function storageGet(key) {
   const result = api.storage.local.get(key);
@@ -40,11 +115,23 @@ function isManagedStorageKey(key) {
 }
 
 async function getScripts() {
-  return Array.isArray(await storageGet(SCRIPT_STORE_KEY)) ? await storageGet(SCRIPT_STORE_KEY) : [];
+  const stored = await storageGet(SCRIPT_STORE_KEY);
+  if (Array.isArray(stored) && stored.length) {
+    persistentMirrorSet(SCRIPT_STORE_KEY, stored).catch(() => {});
+    return stored;
+  }
+  const mirrored = await persistentMirrorGet(SCRIPT_STORE_KEY).catch(() => undefined);
+  if (Array.isArray(mirrored) && mirrored.length) {
+    await storageSet({ [SCRIPT_STORE_KEY]: mirrored });
+    return mirrored;
+  }
+  if (Array.isArray(stored)) return stored;
+  return [];
 }
 
 async function saveScripts(scripts) {
   await storageSet({ [SCRIPT_STORE_KEY]: scripts });
+  await persistentMirrorSet(SCRIPT_STORE_KEY, scripts);
 }
 
 function scriptValueKey(scriptId, key) {

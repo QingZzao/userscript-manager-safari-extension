@@ -383,7 +383,7 @@
           author: script.meta.author
         },
         scriptHandler: 'UserScript Manager Safari',
-        version: '0.1.11'
+        version: '0.1.14'
       },
       addStyle,
       getValue: (key, fallback) => sendMessage({ type: 'gm:getValue', scriptId: script.id, key }).then((response) => {
